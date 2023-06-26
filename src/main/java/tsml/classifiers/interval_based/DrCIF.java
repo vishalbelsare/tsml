@@ -342,7 +342,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
         trainResults = new ClassifierResults();
         rand.setSeed(seed);
         numClasses = data.numClasses();
-        trainResults.setClassifierName(getClassifierName());
+        trainResults.setEstimatorName(getClassifierName());
         trainResults.setBuildTime(System.nanoTime());
         // can classifier handle the data?
         getTSCapabilities().test(data);
@@ -851,7 +851,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
                 predTimes[j] = System.nanoTime() - predTime;
             }
             trainResults.addAllPredictions(actuals, preds, trainDistributions, predTimes, null);
-            trainResults.setClassifierName("DrCIFBagging");
+            trainResults.setEstimatorName("DrCIFBagging");
             trainResults.setDatasetName(data.getProblemName());
             trainResults.setSplit("train");
             trainResults.setFoldID(seed);
@@ -870,7 +870,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
                 predTimes[j] = System.nanoTime() - predTime;
             }
             trainResults.addAllPredictions(actuals, preds, trainDistributions, predTimes, null);
-            trainResults.setClassifierName("SCIFTrainPreds");
+            trainResults.setEstimatorName("SCIFTrainPreds");
             trainResults.setDatasetName(data.getProblemName());
             trainResults.setSplit("train");
             trainResults.setFoldID(seed);
@@ -889,7 +889,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
                 predTimes[j] = System.nanoTime() - predTime;
             }
             trainResults.addAllPredictions(actuals, preds, trainDistributions, predTimes, null);
-            trainResults.setClassifierName("SCIFInternalCV");
+            trainResults.setEstimatorName("SCIFInternalCV");
             trainResults.setDatasetName(data.getProblemName());
             trainResults.setSplit("train");
             trainResults.setFoldID(seed);
@@ -910,7 +910,7 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
             long tt = trainResults.getBuildTime();
             trainResults = cif.trainResults;
             trainResults.setBuildTime(tt);
-            trainResults.setClassifierName("DrCIFOOB");
+            trainResults.setEstimatorName("DrCIFOOB");
             trainResults.setErrorEstimateMethod("OOB");
         }
     }
@@ -1717,13 +1717,6 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
         }
     }
 
-    /**
-     * DrCIF attributes as functions
-     **/
-    public Function<Interval, Double>[] functions = new Function[]{c22_0, c22_1, c22_2, c22_3, c22_4, c22_5, c22_6,
-            c22_7, c22_8, c22_9, c22_10, c22_11, c22_12, c22_13, c22_14, c22_15, c22_16, c22_17, c22_18, c22_19, c22_20,
-            c22_21, mean, median, stdev, slope, iqr, min, max};
-
     public static final Function<Interval, Double> c22_0 = (Interval i) -> {
         double[] intervalArray = Arrays.copyOfRange(i.series, i.start, i.end + 1);
         return Catch22.getSummaryStatByIndex(0, intervalArray, true);
@@ -1827,6 +1820,12 @@ public class DrCIF extends EnhancedAbstractClassifier implements TechnicalInform
     public static final Function<Interval, Double> max = (Interval i) ->
             FeatureSet.calcFeatureByIndex(28, i.start, i.end, i.series);
 
+    /**
+     * DrCIF attributes as functions
+     **/
+    public static final Function<Interval, Double>[] functions = new Function[]{c22_0, c22_1, c22_2, c22_3, c22_4,
+            c22_5, c22_6, c22_7, c22_8, c22_9, c22_10, c22_11, c22_12, c22_13, c22_14, c22_15, c22_16, c22_17, c22_18,
+            c22_19, c22_20, c22_21, mean, median, stdev, slope, iqr, min, max};
 
     /**
      * Development tests for the DrCIF classifier.

@@ -73,8 +73,7 @@ import utilities.*;
  *    - loadResultsFromFile(String path)
  *    - writeFullResultsToFile(String path)  (other writing formats also supported, write...ToFile(...)
  *
- * Supports recording of timings in different time units. Milliseconds is the default for
- * backwards compatability, however nano seconds is generally preferred.
+ * Supports recording of timings in different time units. Nanoseconds is the default.
  * Older files that are read in and do not have a time unit specified are assumed to be in milliseconds.
  *
  * WARNING: The timeunit does not enforce/convert any already-stored times to the new time unit from the old.
@@ -86,7 +85,7 @@ import utilities.*;
  *      results.setBuildTime(buildTimeInResultsUnit)
  *
  * Also supports the calculation of various evaluative performance metrics  based on the predictions (accuracy,
- * auroc, nll etc.) which are used in the MultipleClassifierEvaluation pipeline. For now, call
+ * auroc, nll etc.) which are used in the MultipleEstimatorEvaluation pipeline. For now, call
  * findAllStats() to calculate the performance metrics based on the stored predictions, and access them
  * via directly via the public variables. In the future, these metrics will likely be separated out
  * into their own package
@@ -94,7 +93,7 @@ import utilities.*;
  *
  * EXAMPLE USAGE:
  *          ClassifierResults res = new ClassifierResults();
- *          //set a particular timeunit, if using something other than millis. Nanos recommended
+ *          //set a particular timeunit, if using something other than nanos. Nanos recommended
  *          //set any meta info you want to keep, e.g classifiername, datasetname...
  *
  *          for (Instance inst : test) {
@@ -105,7 +104,7 @@ import utilities.*;
  *              double pred = max(dist); //with some particular tie breaking scheme built in.
  *                              //easiest is utilities.GenericTools.indexOfMax(double[])
  *
- *              res.addPrediction(inst.classValue(), dist, pred, predTime, ""); //desription is optional
+ *              res.addPrediction(inst.classValue(), dist, pred, predTime, ""); //description is optional
  *          }
  *
  *          res.finaliseResults(); //performs some basic validation, and calcs some relevant internal info
@@ -133,7 +132,7 @@ import utilities.*;
  * @author James Large (james.large@uea.ac.uk) + edits from just about everybody
  * @date 19/02/19
  */
-public class ClassifierResults implements DebugPrinting, Serializable {
+public class ClassifierResults extends EstimatorResults implements DebugPrinting, Serializable {
 
     /**
      * Print a message with the filename to stdout when a file cannot be loaded.
@@ -145,10 +144,18 @@ public class ClassifierResults implements DebugPrinting, Serializable {
 
 
 //LINE 1: meta info, set by user
-    private String classifierName = "";
-    private String datasetName = "";
-    private int foldID = -1;
-    private String split = ""; //e.g train or test
+
+    // estimatorName
+
+    // datasetName
+
+    // split
+
+    // foldID
+
+    // timeUnit
+
+    // description
 
     private enum FileType {
         /**
@@ -176,8 +183,6 @@ public class ClassifierResults implements DebugPrinting, Serializable {
     };
     private FileType fileType = FileType.PREDICTIONS;
 
-    private String description= ""; //human-friendly optional extra info if wanted.
-
 //LINE 2: classifier setup/info, parameters. precise format is up to user.
     //e.g maybe this line includes the accuracy of each parameter set searched for in a tuning process, etc
     //old versions of file format also include build time.
@@ -191,44 +196,13 @@ public class ClassifierResults implements DebugPrinting, Serializable {
      */
     private double acc = -1;
 
-    /**
-     * The time taken to complete buildClassifier(Instances), aka training. May be cumulative time over many parameter
-     * set builds, etc It is assumed that the time given will be in the unit of measurement set by this object TimeUnit,
-     * default milliseconds, nanoseconds recommended. If no benchmark time is supplied, the default value is -1
-     *
-     */
-    private long buildTime = -1;
+    // buildTime
 
-    /**
-     * The cumulative prediction time, equal to the sum of the individual prediction times stored. Intended as a quick helper/summary
-     * in case complete prediction information is not stored, and/or for a human reader to quickly compare times.
-     *
-     * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default milliseconds, nanoseconds recommended.
-     * If no benchmark time is supplied, the default value is -1
-     */
-    private long testTime = -1; //total test time for all predictions
+    // testTime
 
-    /**
-     * The time taken to perform some standard benchmarking operation, to allow for a (not necessarily precise)
-     * way to measure the general speed of the hardware that these results were made on, such that users
-     * analysing the results may scale the timings in this file proportional to the benchmarks to get a consistent relative scale
-     * across different results sets. It is up to the user what this benchmark operation is, and how long it is (roughly) expected to take.
-     *
-     * It is assumed that the time given will be in the unit of measurement set by this object TimeUnit, default milliseconds, nanoseconds recommended.
-     * If no benchmark time is supplied, the default value is -1
-     */
-    private long benchmarkTime = -1;
+    // benchmarkTime
 
-    /**
-     * It is user dependent on exactly what this field means and how accurate it may be (because of Java's lazy gc).
-     * Intended purpose would be the size of the model at the end of/after buildClassifier, aka the classifier
-     * has been trained.
-     *
-     * The assumption, for now, is that this is measured in BYTES, but this is not enforced/ensured
-     * If no memoryUsage value is supplied, the default value is -1
-     */
-    private long memoryUsage = -1;
-
+    // memoryUsage
 
     /**
      * todo initially intended as a temporary measure, but might stay here until a switch
@@ -248,7 +222,7 @@ public class ClassifierResults implements DebugPrinting, Serializable {
      * does not mean anything for classifiers implementing the TrainAccuracyEstimate interface,
      * and as such would need to set this themselves (but likely do not)
      *
-     * For those classifiers that do not implement that, Experiments.findOrSetupTrainEstimate(...) will set this value
+     * For those classifiers that do not implement that, ClassifierExperiments.findOrSetupTrainEstimate(...) will set this value
      * as a wrapper around the entire evaluate call for whichever errorEstimateMethod is being used
      */
     private long errorEstimateTime = -1;
@@ -267,7 +241,7 @@ public class ClassifierResults implements DebugPrinting, Serializable {
     private long buildPlusEstimateTime = -1;
 
 //REMAINDER OF THE FILE - 1 prediction per line
-    //raw performance data. currently just four parallel arrays
+    //raw performance data. currently just give parallel arrays
     private ArrayList<Double> trueClassValues;
     private ArrayList<Double> predClassValues;
     private ArrayList<double[]> predDistributions;
@@ -290,7 +264,6 @@ public class ClassifierResults implements DebugPrinting, Serializable {
     public double nll;
     public double meanAUROC;
     public double stddev; //across cv folds, where applicable
-    public long medianPredTime;
     public double[][] confusionMatrix; //[actual class][predicted class]
     public double[] countPerClass;
 
@@ -302,24 +275,6 @@ public class ClassifierResults implements DebugPrinting, Serializable {
      * Used to avoid infinite NLL scores when prob of true class =0 or
      */
     private static double NLL_PENALTY=-6.64; //Log_2(0.01)
-
-    /**
-     * Consistent time unit ASSUMED across build times, test times, individual prediction times.
-     * Before considering different timeunits, all timing were in milliseconds, via
-     * System.currentTimeMillis(). Some classifiers on some datasets may train/predict in less than 1 millisecond
-     * however. The default timeunit will still be milliseconds, however if any time passed has a value of 0,
-     * an exception will be thrown. This is in part to convince people using/owning older code and writing
-     * new code to switch to nanoseconds where it may be clearly needed.
-     *
-     * A long can contain 292 years worth of nanoseconds, which I assume to be enough for now.
-     * Could be conceivable that the cumulative time of a large meta ensemble that is run
-     * multi-threaded on a large dataset might exceed this.
-     *
-     * In results files made before 19/2/2019, which only stored build times and
-     * milliseconds was assumed, there will be no unit of measurement for the time.
-     */
-    private TimeUnit timeUnit = TimeUnit.NANOSECONDS;
-
 
     //self-management flags
     /**
@@ -361,22 +316,22 @@ public class ClassifierResults implements DebugPrinting, Serializable {
      */
     private boolean errorOnTimingOfZero = false;
 
-    //functional getters to retrieve info from a classifierresults object, initialised/stored here for conveniance
-    public static final Function<ClassifierResults, Double> GETTER_Accuracy = (ClassifierResults cr) -> {return cr.acc;};
-    public static final Function<ClassifierResults, Double> GETTER_BalancedAccuracy = (ClassifierResults cr) -> {return cr.balancedAcc;};
-    public static final Function<ClassifierResults, Double> GETTER_AUROC = (ClassifierResults cr) -> {return cr.meanAUROC;};
-    public static final Function<ClassifierResults, Double> GETTER_NLL = (ClassifierResults cr) -> {return cr.nll;};
-    public static final Function<ClassifierResults, Double> GETTER_F1 = (ClassifierResults cr) -> {return cr.f1;};
-    public static final Function<ClassifierResults, Double> GETTER_MCC = (ClassifierResults cr) -> {return cr.mcc;};
-    public static final Function<ClassifierResults, Double> GETTER_Precision = (ClassifierResults cr) -> {return cr.precision;};
-    public static final Function<ClassifierResults, Double> GETTER_Recall = (ClassifierResults cr) -> {return cr.recall;};
-    public static final Function<ClassifierResults, Double> GETTER_Sensitivity = (ClassifierResults cr) -> {return cr.sensitivity;};
-    public static final Function<ClassifierResults, Double> GETTER_Specificity = (ClassifierResults cr) -> {return cr.specificity;};
+    //functional getters to retrieve info from a classifierresults object, initialised/stored here for convenience.
+    //these are currently on used in PerformanceMetric.java, can take any results type as a hack to allow other
+    //results in evaluation.
+    public static final Function<EstimatorResults, Double> GETTER_Accuracy = (EstimatorResults cr) -> ((ClassifierResults)cr).acc;
+    public static final Function<EstimatorResults, Double> GETTER_BalancedAccuracy = (EstimatorResults cr) -> ((ClassifierResults)cr).balancedAcc;
+    public static final Function<EstimatorResults, Double> GETTER_AUROC = (EstimatorResults cr) -> ((ClassifierResults)cr).meanAUROC;
+    public static final Function<EstimatorResults, Double> GETTER_NLL = (EstimatorResults cr) -> ((ClassifierResults)cr).nll;
+    public static final Function<EstimatorResults, Double> GETTER_F1 = (EstimatorResults cr) -> ((ClassifierResults)cr).f1;
+    public static final Function<EstimatorResults, Double> GETTER_MCC = (EstimatorResults cr) -> ((ClassifierResults)cr).mcc;
+    public static final Function<EstimatorResults, Double> GETTER_Precision = (EstimatorResults cr) -> ((ClassifierResults)cr).precision;
+    public static final Function<EstimatorResults, Double> GETTER_Recall = (EstimatorResults cr) -> ((ClassifierResults)cr).recall;
+    public static final Function<EstimatorResults, Double> GETTER_Sensitivity = (EstimatorResults cr) -> ((ClassifierResults)cr).sensitivity;
+    public static final Function<EstimatorResults, Double> GETTER_Specificity = (EstimatorResults cr) -> ((ClassifierResults)cr).specificity;
 
-    public static final Function<ClassifierResults, Double> GETTER_MemoryMB = (ClassifierResults cr) -> { return (double)(cr.memoryUsage/1e+6); };
-
-    public static final Function<ClassifierResults, Double> GETTER_Earliness = (ClassifierResults cr) -> { return cr.earliness; };
-    public static final Function<ClassifierResults, Double> GETTER_HarmonicMean = (ClassifierResults cr) -> { return cr.harmonicMean; };
+    public static final Function<EstimatorResults, Double> GETTER_Earliness = (EstimatorResults cr) -> ((ClassifierResults)cr).earliness;
+    public static final Function<EstimatorResults, Double> GETTER_HarmonicMean = (EstimatorResults cr) -> ((ClassifierResults)cr).harmonicMean;
 
     //todo revisit these when more willing to refactor stats pipeline to avoid assumption of doubles.
     //a double can accurately (except for the standard double precision problems) hold at most ~7 weeks worth of nano seconds
@@ -385,62 +340,12 @@ public class ClassifierResults implements DebugPrinting, Serializable {
     //of meta-ensembles taking more than a week, etc. (or even just summing e.g 30 large times to be averaged)
     //it is still preferable of course to store any timings in nano's in the classifierresults object since they'll
     //store them as longs.
-    public static final Function<ClassifierResults, Double> GETTER_buildTimeDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.buildTime, cr.timeUnit);};
-    public static final Function<ClassifierResults, Double> GETTER_totalTestTimeDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.testTime, cr.timeUnit);};
-    public static final Function<ClassifierResults, Double> GETTER_avgTestPredTimeDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.medianPredTime, cr.timeUnit);};
-    public static final Function<ClassifierResults, Double> GETTER_fromScratchEstimateTimeDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.errorEstimateTime, cr.timeUnit);};
-    public static final Function<ClassifierResults, Double> GETTER_totalBuildPlusEstimateTimeDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.buildPlusEstimateTime, cr.timeUnit);};
-    public static final Function<ClassifierResults, Double> GETTER_additionalTimeForEstimateDoubleMillis = (ClassifierResults cr) -> {return toDoubleMillis(cr.buildPlusEstimateTime - cr.buildTime, cr.timeUnit);};
-
-    public static final Function<ClassifierResults, Double> GETTER_benchmarkTime = (ClassifierResults cr) -> {return toDoubleMillis(cr.benchmarkTime, cr.timeUnit);};
-
-    public static final Function<ClassifierResults, Double> GETTER_buildTimeDoubleMillisBenchmarked = (ClassifierResults cr) -> {return divideAvoidInfinity(GETTER_buildTimeDoubleMillis.apply(cr), GETTER_benchmarkTime.apply(cr));};
-    public static final Function<ClassifierResults, Double> GETTER_totalTestTimeDoubleMillisBenchmarked = (ClassifierResults cr) -> {return divideAvoidInfinity(GETTER_totalTestTimeDoubleMillis.apply(cr), GETTER_benchmarkTime.apply(cr));};
-    public static final Function<ClassifierResults, Double> GETTER_avgTestPredTimeDoubleMillisBenchmarked = (ClassifierResults cr) -> {return divideAvoidInfinity(GETTER_avgTestPredTimeDoubleMillis.apply(cr), GETTER_benchmarkTime.apply(cr));};
-    public static final Function<ClassifierResults, Double> GETTER_fromScratchEstimateTimeDoubleMillisBenchmarked = (ClassifierResults cr) -> {return divideAvoidInfinity(GETTER_fromScratchEstimateTimeDoubleMillis.apply(cr), GETTER_benchmarkTime.apply(cr));};
-    public static final Function<ClassifierResults, Double> GETTER_totalBuildPlusEstimateTimeDoubleMillisBenchmarked = (ClassifierResults cr) -> {return divideAvoidInfinity(GETTER_totalBuildPlusEstimateTimeDoubleMillis.apply(cr), GETTER_benchmarkTime.apply(cr));};
-    public static final Function<ClassifierResults, Double> GETTER_additionalTimeForEstimateDoubleMillisBenchmarked = (ClassifierResults cr) -> {return divideAvoidInfinity(GETTER_additionalTimeForEstimateDoubleMillis.apply(cr), GETTER_benchmarkTime.apply(cr));};
-
-    private static double divideAvoidInfinity(double a, double b) {
-        if(b == 0) {
-            // avoid divide by 0 --> infinity
-            return a;
-        } else {
-            return a / b;
-        }
-    }
-
-
-    private static double toDoubleMillis(long time, TimeUnit unit) {
-        if (time < 0)
-            return -1;
-        if (time == 0)
-            return 0;
-
-        if (unit.equals(TimeUnit.MICROSECONDS)) {
-            long pre = time / 1000;  //integer division for pre - decimal point
-            long post = time % 1000;  //the remainder that needs to be converted to post decimal point, some value < 1000
-            double convertedPost = (double)post / 1000; // now some fraction < 1
-
-            return pre + convertedPost;
-        }
-        else if (unit.equals(TimeUnit.NANOSECONDS)) {
-            long pre = time / 1000000;  //integer division for pre - decimal point
-            long post = time % 1000000;  //the remainder that needs to be converted to post decimal point, some value < 1000
-            double convertedPost = (double)post / 1000000; // now some fraction < 1
-
-            return pre + convertedPost;
-        }
-        else {
-            //not higher resolution than millis, no special conversion needed just cast to double
-            return (double)unit.toMillis(time);
-        }
-    }
-
-    private static double benchmarkMillis(double millisTime, double benchmarkTime) {
-        return millisTime / benchmarkTime;
-    }
-
+    public static final Function<EstimatorResults, Double> GETTER_fromScratchEstimateTimeDoubleMillis = (EstimatorResults cr) -> toDoubleMillis(((ClassifierResults)cr).errorEstimateTime, cr.timeUnit);
+    public static final Function<EstimatorResults, Double> GETTER_totalBuildPlusEstimateTimeDoubleMillis = (EstimatorResults cr) -> toDoubleMillis(((ClassifierResults)cr).buildPlusEstimateTime, cr.timeUnit);
+    public static final Function<EstimatorResults, Double> GETTER_additionalTimeForEstimateDoubleMillis = (EstimatorResults cr) -> toDoubleMillis(((ClassifierResults)cr).buildPlusEstimateTime - cr.buildTime, cr.timeUnit);
+    public static final Function<EstimatorResults, Double> GETTER_fromScratchEstimateTimeDoubleMillisBenchmarked = (EstimatorResults cr) -> divideAvoidInfinity(GETTER_fromScratchEstimateTimeDoubleMillis.apply(cr), GETTER_benchmarkTime.apply(cr));
+    public static final Function<EstimatorResults, Double> GETTER_totalBuildPlusEstimateTimeDoubleMillisBenchmarked = (EstimatorResults cr) -> divideAvoidInfinity(GETTER_totalBuildPlusEstimateTimeDoubleMillis.apply(cr), GETTER_benchmarkTime.apply(cr));
+    public static final Function<EstimatorResults, Double> GETTER_additionalTimeForEstimateDoubleMillisBenchmarked = (EstimatorResults cr) -> divideAvoidInfinity(GETTER_additionalTimeForEstimateDoubleMillis.apply(cr), GETTER_benchmarkTime.apply(cr));
 
     /*********************************
      *
@@ -605,103 +510,6 @@ public class ClassifierResults implements DebugPrinting, Serializable {
     }
 
 
-
-
-    /***************************
-     *
-     *   LINE 1 GETS/SETS
-     *
-     *  Just basic descriptive stuff, nothing fancy goign on here
-     *
-     */
-
-    public String getClassifierName() { return classifierName; }
-    public void setClassifierName(String classifierName) { this.classifierName = classifierName; }
-
-    public String getDatasetName() { return datasetName; }
-    public void setDatasetName(String datasetName) { this.datasetName = datasetName; }
-
-    public int getFoldID() { return foldID; }
-    public void setFoldID(int foldID) { this.foldID = foldID; }
-
-    /**
-     * e.g "train", "test", "validation"
-     */
-    public String getSplit() { return split; }
-
-    /**
-     * e.g "train", "test", "validation"
-     */
-    public void setSplit(String split) { this.split = split; }
-
-
-    /**
-     * Consistent time unit ASSUMED across build times, test times, individual prediction times.
-     * Before considering different timeunits, all timing were in milliseconds, via
-     * System.currentTimeMillis(). Some classifiers on some datasets may run in less than 1 millisecond
-     * however, so as of 19/2/2019, classifierResults now defaults to working in nanoseconds.
-     *
-     * A long can contain 292 years worth of nanoseconds, which I assume to be enough for now.
-     * Could be conceivable that the cumulative time of a large meta ensemble that is run
-     * multi-threaded on a large dataset might exceed this.
-     *
-     * In results files made before 19/2/2019, which only stored build times and
-     * milliseconds was assumed, there will be no unit of measurement for the time.
-     */
-    public TimeUnit getTimeUnit() {
-        return timeUnit;
-    }
-
-    /**
-     * This will NOT convert any timings already stored in this classifier results object
-     * to the new time unit. e.g if build time was had already been stored in seconds as 10, THEN
-     * setTimeUnit(TimeUnit.MILLISECONDS) was called, the actual value of build time would still be 10,
-     * but now assumed to mean 10 milliseconds.
-     *
-     * Consistent time unit ASSUMED across build times, test times, individual prediction times.
-     * Before considering different timeunits, all timing were in milliseconds, via
-     * System.currentTimeMillis(). Some classifiers on some datasets may run in less than 1 millisecond
-     * however, so as of 19/2/2019, classifierResults now defaults to working in nanoseconds.
-     *
-     * A long can contain 292 years worth of nanoseconds, which I assume to be enough for now.
-     * Could be conceivable that the cumulative time of a large meta ensemble that is run
-     * multi-threaded on a large dataset might exceed this.
-     *
-     * In results files made before 19/2/2019, which only stored build times and
-     * milliseconds was assumed, there will be no unit of measurement for the time.
-     */
-    public void setTimeUnit(TimeUnit timeUnit) {
-        this.timeUnit = timeUnit;
-    }
-
-
-
-    /**
-     * This is a free-form description that can hold any info you want, with the only caveat
-     * being that it cannot contain newline characters. Description could be the experiment
-     * that these results were made for, e.g "Initial Univariate Benchmarks". Entirely
-     * up to the user to process if they want to.
-     *
-     * By default, it is an empty string.
-     */
-    public String getDescription() {
-        return description;
-    }
-    /**
-     * This is a free-form description that can hold any info you want, with the only caveat
-     * being that it cannot contain newline characters. Description could be the experiment
-     * that these results were made for, e.g "Initial Univariate Benchmarks". Entirely
-     * up to the user to process if they want to.
-     *
-     * By default, it is an empty string.
-     */
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-
-
-
     /*****************************
      *
      *     LINE 2 GETS/SETS
@@ -768,6 +576,7 @@ public class ClassifierResults implements DebugPrinting, Serializable {
     public static boolean printSetAccWarning = true;
     private boolean firstTimeInSetAcc = true;
 
+    @Override
     public double getAcc() {
         if (acc < 0)
             calculateAcc();
@@ -885,7 +694,7 @@ public class ClassifierResults implements DebugPrinting, Serializable {
      * does not mean anything for classifiers implementing the TrainAccuracyEstimate interface,
      * and as such would need to set this themselves (but likely do not)
      *
-     * For those classifiers that do not implement that, Experiments.findOrSetupTrainEstimate(...) will set this value
+     * For those classifiers that do not implement that, ClassifierExperiments.findOrSetupTrainEstimate(...) will set this value
      * as a wrapper around the entire evaluate call for whichever errorEstimateMethod is being used
      */
     public long getErrorEstimateTime() {
@@ -903,7 +712,7 @@ public class ClassifierResults implements DebugPrinting, Serializable {
      * does not mean anything for classifiers implementing the TrainAccuracyEstimate interface,
      * and as such would need to set this themselves (but likely do not)
      *
-     * For those classifiers that do not implement that, Experiments.findOrSetupTrainEstimate(...) will set this value
+     * For those classifiers that do not implement that, ClassifierExperiments.findOrSetupTrainEstimate(...) will set this value
      * as a wrapper around the entire evaluate call for whichever errorEstimateMethod is being used
      */
     public void setErrorEstimateTime(long errorEstimateTime) {
@@ -1198,7 +1007,6 @@ public class ClassifierResults implements DebugPrinting, Serializable {
         return trueClassValues.get(index);
     }
 
-
     public ArrayList<Double> getPredClassVals(){
         return predClassValues;
     }
@@ -1267,6 +1075,7 @@ public class ClassifierResults implements DebugPrinting, Serializable {
         return predDescriptions.get(index);
     }
 
+    @Override
     public void cleanPredictionInfo() {
         predDistributions = null;
         predClassValues = null;
@@ -1296,7 +1105,7 @@ public class ClassifierResults implements DebugPrinting, Serializable {
     public static boolean printDistMissingWarning = true;
     /**
      * Reads and STORES the prediction in this classifierresults object
-     * returns true if the prediction described by this string was correct (i.e. truclass==predclass)
+     * returns true if the prediction described by this string was correct (i.e. trueclass==predclass)
      *
      * INCREMENTS NUMINSTANCES
      *
@@ -1555,10 +1364,10 @@ public class ClassifierResults implements DebugPrinting, Serializable {
         //old tuned classifiers (and maybe others) just wrote a classifier name identifier
         //covering for backward compatability, otherwise datasetname is first
         if (parts.length == 1)
-            classifierName = parts[0];
+            estimatorName = parts[0];
         else {
             datasetName = parts[0];
-            classifierName = parts[1];
+            estimatorName = parts[1];
         }
 
         if (parts.length > 2)
@@ -1576,14 +1385,14 @@ public class ClassifierResults implements DebugPrinting, Serializable {
             fileType = FileType.valueOf(parts[5]);
 
         if (parts.length > 6)
-            description = parts[6];
+            description = parts[6]; //todo duplicating with for loop?
 
         //nothing stopping the description from having its own commas in it, jsut read until end of line
         for (int i = 6; i < parts.length; i++)
             description += "," + parts[i];
     }
     private String generateFirstLine() {
-        return datasetName + "," + classifierName + "," + split + "," + foldID + "," + getTimeUnitAsString() + "," + fileType.name() + ", "+ description;
+        return datasetName + "," + estimatorName + "," + split + "," + foldID + "," + getTimeUnitAsString() + "," + fileType.name() + "," + description;
     }
 
     private void parseSecondLine(String line) {
@@ -1797,7 +1606,7 @@ public class ClassifierResults implements DebugPrinting, Serializable {
         }
 
         //timing
-        medianPredTime=findMedianPredTime();
+        medianPredTime=findMedianPredTime(predTimes);
 
         //early classification
         //earliness=findEarliness();
@@ -1815,6 +1624,7 @@ public class ClassifierResults implements DebugPrinting, Serializable {
      *
      * In this latter case, this method does nothing.
      */
+    @Override
     public void findAllStatsOnce(){
         if (finalised && allStatsFound) {
             printlnDebug("Stats already found, ignoring findAllStatsOnce()");
@@ -1999,19 +1809,6 @@ public class ClassifierResults implements DebugPrinting, Serializable {
         return (1+beta*beta) * (precision*recall) / ((beta*beta)*precision + recall);
     }
 
-    /**
-     * Makes copy of pred times to easily maintain original ordering
-     */
-    protected long findMedianPredTime() {
-        List<Long> copy = new ArrayList<>(predTimes);
-        Collections.sort(copy);
-
-        int mid = copy.size()/2;
-        if (copy.size() % 2 == 0)
-            return (copy.get(mid) + copy.get(mid-1)) / 2;
-        else
-            return copy.get(mid);
-    }
 
     protected double findAUROC(int c){
         class Pair implements Comparable<Pair>{
@@ -2246,7 +2043,7 @@ public class ClassifierResults implements DebugPrinting, Serializable {
                 res.getPredDescriptionsAsArray());
         
         
-        newres.setClassifierName(res.getClassifierName());
+        newres.setEstimatorName(res.getEstimatorName());
         newres.setDatasetName(res.getDatasetName());
         newres.setFoldID(res.getFoldID());
         newres.setTimeUnit(res.getTimeUnit());
@@ -2277,7 +2074,7 @@ public class ClassifierResults implements DebugPrinting, Serializable {
     private static void readWriteTest() throws Exception {
         ClassifierResults res = new ClassifierResults();
 
-        res.setClassifierName("testClassifier");
+        res.setEstimatorName("testClassifier");
         res.setDatasetName("testDataset");
         //empty split
         //empty foldid

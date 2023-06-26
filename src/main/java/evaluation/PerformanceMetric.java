@@ -18,6 +18,10 @@
 package evaluation;
 
 import evaluation.storage.ClassifierResults;
+import evaluation.storage.ClustererResults;
+import evaluation.storage.EstimatorResults;
+import evaluation.storage.RegressorResults;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -28,13 +32,13 @@ import java.util.function.Function;
  * 
  * For now, this is a container class for metrics and meta info about them. It contains
      - The name of this metric for printouts
-     - A function to get this metric's score fro ma classifier results object (in future, perhaps calculate them here instead, etc)
+     - A function to get this metric's score from an estimator results object (in future, perhaps calculate them here instead, etc)
      - A flag for whether this metric wants to be maximise or minimised
      - A flag to _suggest_ how this metric should be summarised/averaged 
                 - for now, mean vs median for e.g accs vs timings. For timings we would want to 
                   use median instead of mean to reduce effect of outliers
                 - in future, probably just define a comparator
-     - A descriptor for use in images when comparing classifiers with this metric, e.g better/worse/slower
+     - A descriptor for use in images when comparing estimators with this metric, e.g better/worse/slower
      - Maybe more in the future     
  *
  * @author James Large (james.large@uea.ac.uk)
@@ -44,7 +48,7 @@ public class PerformanceMetric {
     public static final String benchmarkSuffix = "_BM";
 
     public String name;
-    public Function<ClassifierResults, Double> getter;
+    public Function<EstimatorResults, Double> getter;
     public boolean takeMean;
     public boolean maximise;
     public boolean benchmarked; // for timings
@@ -53,13 +57,13 @@ public class PerformanceMetric {
     /**
      * currently only used for the pairwise scatter diagrams in the pipeline, 
      * this refers to the descriptor for comparing the scores of a metric between 
-     * classifiers
+     * estimators
      *
      * If the raw value of a is HIGHER than b, then a is {better,worse,slower,faster,etc.} than b
      */
     public String comparisonDescriptor;
     
-    public PerformanceMetric(String metricName, Function<ClassifierResults, Double> getScore, boolean takeMean, boolean maximised, String comparisonDescriptor, boolean benchmarked, String defaultSplit) {
+    public PerformanceMetric(String metricName, Function<EstimatorResults, Double> getScore, boolean takeMean, boolean maximised, String comparisonDescriptor, boolean benchmarked, String defaultSplit) {
         this.name = metricName;
         this.getter = getScore;
         this.takeMean = takeMean;
@@ -69,7 +73,7 @@ public class PerformanceMetric {
         this.defaultSplit = defaultSplit;
     }
     
-    public double getScore(ClassifierResults res) {
+    public double getScore(EstimatorResults res) {
         return getter.apply(res);
     }
     
@@ -108,13 +112,26 @@ public class PerformanceMetric {
     public static PerformanceMetric totalBuildPlusEstimateTimeBenchmarked = new PerformanceMetric("BuildAndEstTimes"+benchmarkSuffix, ClassifierResults.GETTER_totalBuildPlusEstimateTimeDoubleMillisBenchmarked, median, min, slower, isBenchmarked, estimate);
     public static PerformanceMetric extraTimeForEstimateBenchmarked = new PerformanceMetric("ExtraTimeForEst"+benchmarkSuffix, ClassifierResults.GETTER_additionalTimeForEstimateDoubleMillisBenchmarked, median, min, slower, isBenchmarked, estimate);
 
-    public static PerformanceMetric benchmarkTime   = new PerformanceMetric("BenchmarkTimes", ClassifierResults.GETTER_benchmarkTime, median, min, slower, isNotBenchmarked, train);
-    public static PerformanceMetric memory          = new PerformanceMetric("MaxMemory", ClassifierResults.GETTER_MemoryMB,                median, min,   worse, isNotBenchmarked, train);
+    public static PerformanceMetric benchmarkTime   = new PerformanceMetric("BenchmarkTimes", ClassifierResults.GETTER_benchmarkTime,    median, min, slower, isNotBenchmarked, train);
+    public static PerformanceMetric memory          = new PerformanceMetric("MaxMemory", ClassifierResults.GETTER_MemoryMB,              median, min, worse, isNotBenchmarked, train);
 
     public static PerformanceMetric earliness       = new PerformanceMetric("Earliness", ClassifierResults.GETTER_Earliness,             mean, min,   worse, isNotBenchmarked, test);
     public static PerformanceMetric harmonicMean    = new PerformanceMetric("HarmonicMean", ClassifierResults.GETTER_HarmonicMean,       mean, max,   better, isNotBenchmarked, test);
 
-    
+    public static PerformanceMetric clAcc           = new PerformanceMetric("CL-ACC", ClustererResults.GETTER_Accuracy,                  mean, max,   better, isNotBenchmarked, test);
+    public static PerformanceMetric RI              = new PerformanceMetric("RI", ClustererResults.GETTER_RandIndex,                     mean, max,   better, isNotBenchmarked, test);
+    public static PerformanceMetric ARI             = new PerformanceMetric("ARI", ClustererResults.GETTER_AdjustedRandIndex,            mean, max,   better, isNotBenchmarked, test);
+    public static PerformanceMetric MI              = new PerformanceMetric("MI", ClustererResults.GETTER_MutualInformation,             mean, max,   better, isNotBenchmarked, test);
+    public static PerformanceMetric NMI             = new PerformanceMetric("NMI", ClustererResults.GETTER_NormalizedMutualInformation,  mean, max,   better, isNotBenchmarked, test);
+    public static PerformanceMetric AMI             = new PerformanceMetric("AMI", ClustererResults.GETTER_AdjustedMutualInformation,    mean, max,   better, isNotBenchmarked, test);
+
+    public static PerformanceMetric MSE             = new PerformanceMetric("MSE", RegressorResults.GETTER_MSE,                          mean, min,   worse, isNotBenchmarked, test);
+    public static PerformanceMetric RMSE            = new PerformanceMetric("RMSE", RegressorResults.GETTER_RMSE,                        mean, min,   worse, isNotBenchmarked, test);
+
+    public static PerformanceMetric MAE             = new PerformanceMetric("MAE", RegressorResults.GETTER_MAE,                          mean, min,   worse, isNotBenchmarked, test);
+    public static PerformanceMetric R2              = new PerformanceMetric("R2", RegressorResults.GETTER_R2,                            mean, max,   better, isNotBenchmarked, test);
+    public static PerformanceMetric MAPE            = new PerformanceMetric("MAPE", RegressorResults.GETTER_MAPE,                        mean, min,   worse, isNotBenchmarked, test);
+
     public static List<PerformanceMetric> getAccuracyStatistic() {
         ArrayList<PerformanceMetric> stats = new ArrayList<>();
         stats.add(acc);
@@ -143,10 +160,46 @@ public class PerformanceMetric {
         stats.add(sensitivity);
         stats.add(specificity);
 
-        //stats.add(memory);
+        return stats;
+    }
 
-        //stats.add(earliness);
-        //stats.add(harmonicMean);
+    public static List<PerformanceMetric> getEarlyClassificationStatistics() {
+        ArrayList<PerformanceMetric> stats = new ArrayList<>();
+        stats.add(acc);
+        stats.add(balacc);
+        stats.add(AUROC);
+        stats.add(NLL);
+        stats.add(F1);
+        stats.add(MCC);
+        stats.add(precision);
+        stats.add(recall);
+        stats.add(sensitivity);
+        stats.add(specificity);
+        stats.add(earliness);
+        stats.add(harmonicMean);
+
+        return stats;
+    }
+
+    public static List<PerformanceMetric> getClusteringStatistics() {
+        ArrayList<PerformanceMetric> stats = new ArrayList<>();
+        stats.add(clAcc);
+        stats.add(RI);
+        stats.add(ARI);
+        stats.add(MI);
+        stats.add(NMI);
+        stats.add(AMI);
+
+        return stats;
+    }
+
+    public static List<PerformanceMetric> getRegressionStatistics() {
+        ArrayList<PerformanceMetric> stats = new ArrayList<>();
+        stats.add(MSE);
+        stats.add(RMSE);
+        stats.add(MAE);
+        stats.add(R2);
+        stats.add(MAPE);
 
         return stats;
     }

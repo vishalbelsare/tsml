@@ -17,8 +17,7 @@
 package evaluation.evaluators;
 
 import evaluation.storage.ClassifierResults;
-import experiments.ClassifierLists;
-import experiments.data.DatasetLoading;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -46,7 +45,7 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
      * If true, the seeds used to generate each resample shall simply be id 
      * of the resample in the loop, i.e. the values 0 to numFolds-1
      * 
-     * This would mirror the generation of arff folds in Experiments, for example. 
+     * This would mirror the generation of arff folds in ClassifierExperiments, for example.
      * This also means that the seed of this StratifiedResamplesEvaluator object
      * has no real use, aside from it would be stored as the fold id in the meta data
      * of the concatenated results object. 
@@ -84,7 +83,7 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
      * If true, the seeds used to generate each resample shall simply be id 
      * of the resample in the loop, i.e. the values 0 to numFolds-1
      * 
-     * This would mirror the generation of arff folds in Experiments, for example. 
+     * This would mirror the generation of arff folds in ClassifierExperiments, for example.
      * This also means that the seed of this StratifiedResamplesEvaluator object
      * has no real use, aside from it would be stored as the fold id in the meta data
      * of the concatenated results object. 
@@ -102,7 +101,7 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
      * If true, the seeds used to generate each resample shall simply be id 
      * of the resample in the loop, i.e. the values 0 to numFolds-1
      * 
-     * This would mirror the generation of arff folds in Experiments, for example. 
+     * This would mirror the generation of arff folds in ClassifierExperiments, for example.
      * This also means that the seed of this StratifiedResamplesEvaluator object
      * has no real use, aside from it would be stored as the fold id in the meta data
      * of the concatenated results object. 
@@ -243,7 +242,7 @@ public class StratifiedResamplesEvaluator extends MultiSamplingEvaluator {
             
             ClassifierResults concatenatedClassifierRes = ClassifierResults.concatenateClassifierResults(resultsPerFold[classifierIndex]);
             concatenatedClassifierRes.setTimeUnit(TimeUnit.NANOSECONDS);
-            concatenatedClassifierRes.setClassifierName(classifiers[classifierIndex].getClass().getSimpleName());
+            concatenatedClassifierRes.setEstimatorName(classifiers[classifierIndex].getClass().getSimpleName());
             concatenatedClassifierRes.setDatasetName(dataset.relationName());
             concatenatedClassifierRes.setFoldID(seed);
             concatenatedClassifierRes.setSplit("train"); //todo revisit, or leave with the assumption that calling method will set this to test when needed

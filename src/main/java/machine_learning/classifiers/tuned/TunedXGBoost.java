@@ -31,7 +31,7 @@ import weka.core.Instance;
 import weka.core.Instances;
 import experiments.CollateResults;
 import experiments.data.DatasetLists;
-import experiments.Experiments;
+import experiments.ClassifierExperiments;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
@@ -271,7 +271,7 @@ public class TunedXGBoost extends EnhancedAbstractClassifier implements SavePara
 //                    cvmodels.setNextNumIterations(p4);
 //                    tempResults=cv.crossValidateWithStats(cvmodels,trainCopy);
 
-                    tempResults.setClassifierName("XGBoostPara"+count);
+                    tempResults.setEstimatorName("XGBoostPara"+count);
                     tempResults.setParas("learningRate,"+p1+",maxTreeDepth,"+p2+",numIterations="+p4);
 
                     double e=1-tempResults.getAcc();
@@ -478,7 +478,7 @@ public class TunedXGBoost extends EnhancedAbstractClassifier implements SavePara
 //            trainResults.buildTime=System.nanoTime()-startTime;
 
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-        trainResults.setClassifierName(tuneParameters ? "TunedXGBoost" : "XGBoost");
+        trainResults.setEstimatorName(tuneParameters ? "TunedXGBoost" : "XGBoost");
         trainResults.setDatasetName(trainInsts.relationName());
         trainResults.setParas(getParameters());
     }
@@ -685,26 +685,26 @@ public class TunedXGBoost extends EnhancedAbstractClassifier implements SavePara
 
 //        for (int fold = 0; fold < 15; fold++) { 
 //            for (String dataset : DatasetLists.UCIContinuousFileNames) {
-//                Experiments.main(new String[] { "Z:/Data/UCIContinuous/", "Z:/CawpeResubmissionDump/XGBoostTimingsForHESCA/", "true", "XGBoostSingleThread", dataset, ""+(fold+1) });
+//                ClassifierExperiments.main(new String[] { "Z:/Data/UCIContinuous/", "Z:/CawpeResubmissionDump/XGBoostTimingsForHESCA/", "true", "XGBoostSingleThread", dataset, ""+(fold+1) });
 //            }
 //        }
 //        for (int fold = 15; fold < 30; fold++) { 
 //            for (String dataset : DatasetLists.UCIContinuousFileNames) {
-//                Experiments.main(new String[] { "Z:/Data/UCIContinuous/", "Z:/CawpeResubmissionDump/XGBoostTimingsForHESCA/", "true", "XGBoostSingleThread", dataset, ""+(fold+1) });
+//                ClassifierExperiments.main(new String[] { "Z:/Data/UCIContinuous/", "Z:/CawpeResubmissionDump/XGBoostTimingsForHESCA/", "true", "XGBoostSingleThread", dataset, ""+(fold+1) });
 //            }
 //        }
 
         //para split 
 //        for (int para = 1; para <= 27; para++)
-//            Experiments.main(new String[] { "Z:/Data/UCIDelgado/", "C:/Temp/XGBoostParaSplitTest/", "true", "TunedXGBoost", "hayes-roth", "1", "false", ""+para});
-//        Experiments.main(new String[] { "Z:/Data/UCIDelgado/", "C:/Temp/XGBoostParaSplitTest/", "true", "TunedXGBoost", "hayes-roth", "1", "true"});
+//            ClassifierExperiments.main(new String[] { "Z:/Data/UCIDelgado/", "C:/Temp/XGBoostParaSplitTest/", "true", "TunedXGBoost", "hayes-roth", "1", "false", ""+para});
+//        ClassifierExperiments.main(new String[] { "Z:/Data/UCIDelgado/", "C:/Temp/XGBoostParaSplitTest/", "true", "TunedXGBoost", "hayes-roth", "1", "true"});
         //end para split 
 
         //checkpoint
-//        Experiments.main(new String[] { "Z:/Data/UCIDelgado/", "C:/Temp/XGBoostCheckpointTest/", "true", "TunedXGBoost", "hayes-roth", "1", "true"});
+//        ClassifierExperiments.main(new String[] { "Z:/Data/UCIDelgado/", "C:/Temp/XGBoostCheckpointTest/", "true", "TunedXGBoost", "hayes-roth", "1", "true"});
 
         //standard
-        Experiments.main(new String[] { "Z:/Data/UCIDelgado/", "C:/Temp/XGBoostStraightUpTest/", "true", "TunedXGBoost", "hayes-roth", "1", });
+        ClassifierExperiments.main(new String[] { "Z:/Data/UCIDelgado/", "C:/Temp/XGBoostStraightUpTest/", "true", "TunedXGBoost", "hayes-roth", "1", });
 
     }
 

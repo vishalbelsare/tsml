@@ -24,6 +24,7 @@ import evaluation.evaluators.SamplingEvaluator;
 import evaluation.storage.ClassifierResults;
 import experiments.data.DatasetLoading;
 import java.io.File;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -40,7 +41,6 @@ import utilities.ThreadingUtilities;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
 import weka.core.Instances;
-import weka.filters.SimpleBatchFilter;
 import machine_learning.classifiers.ensembles.voting.ModuleVotingScheme;
 import machine_learning.classifiers.ensembles.weightings.ModuleWeightingScheme;
 
@@ -178,7 +178,7 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
     /**
      * Simple data type to hold a classifier and it's related information and results.
      */
-    public static class EnsembleModule implements DebugPrinting {
+    public static class EnsembleModule implements DebugPrinting, Serializable {
         private Classifier classifier;
 
         private String moduleName;
@@ -254,13 +254,13 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
             // 3) from existing train results (if read in from file e.g.)
             // 4) from existing test results (if only test results read from file)
 
-            if (parameters == null || parameters == "") {
-                if (classifier instanceof SaveParameterInfo)
-                    parameters = ((SaveParameterInfo) classifier).getParameters();
-                else if (trainResults != null)
+            if (parameters == null || parameters.equals("")) {
+                if (trainResults != null)
                     parameters = trainResults.getParas();
                 else if (testResults != null)
                     parameters = testResults.getParas();
+                else if (classifier instanceof SaveParameterInfo)
+                    parameters = ((SaveParameterInfo) classifier).getParameters();
                 else
                     parameters = "NoParaInfoFound";
             }
@@ -522,8 +522,13 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
 
     protected File findResultsFile(String readResultsFilesDirectory, String classifierName, String trainOrTest) {
         File file = new File(readResultsFilesDirectory+classifierName+"/Predictions/"+datasetName+"/"+trainOrTest+"Fold"+seed+".csv");
-        if(!file.exists() || file.length() == 0)
-            return null;
+        if(!file.exists() || file.length() == 0) {
+            File file2 = new File(readResultsFilesDirectory + classifierName + "/Predictions/" + datasetName + "/" + trainOrTest + "Resample" + seed + ".csv");
+            if (!file2.exists() || file2.length() == 0)
+                return null;
+            else
+                return file2;
+        }
         else
             return file;
     }
@@ -540,7 +545,7 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
         new File(fullPath).mkdirs();
         fullPath += "/" + trainOrTest + "Fold" + seed + ".csv";
         
-        results.setClassifierName(classifierName);
+        results.setEstimatorName(classifierName);
         results.setDatasetName(datasetName);
         results.setFoldID(seed);
         results.setSplit(trainOrTest);
@@ -624,7 +629,7 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
         for (EnsembleModule module : modules)
             estimateTime += module.trainResults.getErrorEstimateTime();
 
-        trainResults.setClassifierName(ensembleName);
+        trainResults.setEstimatorName(ensembleName);
         if (datasetName == null || datasetName.equals(""))
             datasetName = data.relationName();
         trainResults.setDatasetName(datasetName);
@@ -915,17 +920,17 @@ public abstract class AbstractEnsemble extends EnhancedAbstractClassifier implem
             //and voting definition time
             for (EnsembleModule module : modules) {
                 if (needIndividualTrainPreds()) {
-                    if (module.trainResults.getBuildPlusEstimateTime() == -1){
+                    if (module.trainResults.getBuildPlusEstimateTime() == -1 || module.trainResults.getBuildTimeInNanos() == -1){
                         //assumes estimate time is not included in the total build time
-                        buildTime += module.trainResults.getBuildTimeInNanos()
-                                + module.trainResults.getErrorEstimateTimeInNanos();
+                        long t = module.trainResults.getBuildTimeInNanos() == -1 ? module.testResults.getBuildTimeInNanos() : module.trainResults.getBuildTimeInNanos();
+                        buildTime += t + module.trainResults.getErrorEstimateTimeInNanos();
                     }
                     else{   
                         buildTime += module.trainResults.getBuildPlusEstimateTimeInNanos();
                     }
                 }
                 else{
-                    buildTime += module.trainResults.getBuildTimeInNanos();
+                    buildTime += module.trainResults.getBuildTimeInNanos() == -1 ? module.testResults.getBuildTimeInNanos() : module.trainResults.getBuildTimeInNanos();
                 }
             }
         }

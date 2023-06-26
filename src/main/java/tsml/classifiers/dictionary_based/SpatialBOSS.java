@@ -451,7 +451,7 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
 
     private double findEnsembleTrainAcc(Instances data) throws Exception {
         trainResults.setTimeUnit(TimeUnit.NANOSECONDS);
-        trainResults.setClassifierName(getClassifierName());
+        trainResults.setEstimatorName(getClassifierName());
         trainResults.setDatasetName(data.relationName());
         trainResults.setFoldID(seed);
         trainResults.setSplit("train");
@@ -546,7 +546,7 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
     }
 
      public static void main(String[] args) throws Exception{
-//         Experiments.ExperimentalArguments exp = new Experiments.ExperimentalArguments();
+//         ClassifierExperiments.ExperimentalArguments exp = new ClassifierExperiments.ExperimentalArguments();
 //         exp.dataReadLocation =  "C:/TSCProblems2018/";
 //         exp.resultsWriteLocation = "C:/Temp/spatialboss/";
 //         exp.classifierName = "SpatialBOSS";
@@ -555,7 +555,7 @@ public class SpatialBOSS extends EnhancedAbstractClassifier implements SaveParam
 //         exp.forceEvaluation = true;
 //         exp.foldId = 1;
 //
-//         Experiments.setupAndRunExperiment(exp);
+//         ClassifierExperiments.setupAndRunExperiment(exp);
 
 
         //Minimum working example

@@ -78,7 +78,7 @@ import machine_learning.classifiers.SaveEachParameter;
     * EnhancedAbstractClassifier (in that, it extend RandomForest directly
     * which does not extend that)
     * 
-    * Simple usage with Experiments may not be guaranteed to work, especially in trainfile writing
+    * Simple usage with ClassifierExperiments may not be guaranteed to work, especially in trainfile writing
  */
 public class TunedRandomForest extends RandomForest implements SaveParameterInfo,SaveEachParameter,ParameterSplittable{
     boolean tuneParameters=true;
@@ -303,7 +303,7 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
                     model.setSeed(count);
                     tempResults=cv.crossValidateWithStats(model,trainCopy);
                     
-                    tempResults.setClassifierName("RandFPara"+count);
+                    tempResults.setEstimatorName("RandFPara"+count);
                     tempResults.setDatasetName(train.relationName());
                     tempResults.setFoldID(seed);
                     tempResults.setSplit("train");
@@ -512,7 +512,7 @@ public class TunedRandomForest extends RandomForest implements SaveParameterInfo
         res.setTimeUnit(TimeUnit.NANOSECONDS);
         res.setBuildTime(System.nanoTime()-startTime);
         if(trainPath!=""){  //Save basic train results
-            res.setClassifierName("TunedRandF");
+            res.setEstimatorName("TunedRandF");
             res.setDatasetName(data.relationName());
             res.setFoldID(seed);
             res.setSplit("train");

@@ -63,7 +63,7 @@ m_C
 * EnhancedAbstractClassifier (in that, it extend RandomForest directly
 * which does not extend that)
 * 
-* Simple usage with Experiments may not be guaranteed to work, especially in trainfile writing
+* Simple usage with ClassifierExperiments may not be guaranteed to work, especially in trainfile writing
 
  TunedSVM sets the margin c through b ten fold cross validation.
  
@@ -352,7 +352,7 @@ public class TunedSVM extends SMO implements SaveParameterInfo,SaveEachParameter
                 model.setBuildLogisticModels(true);
                 tempResults=cv.crossValidateWithStats(model,trainCopy);
                 
-                tempResults.setClassifierName("TunedSVM"+kernel);
+                tempResults.setEstimatorName("TunedSVM"+kernel);
                 tempResults.setDatasetName(train.relationName());
                 tempResults.setFoldID(seed);
                 tempResults.setSplit("train");
@@ -1024,7 +1024,7 @@ this gives the option of finding one using 10xCV
         else
             res.setBuildTime(System.nanoTime()-t);
         if(trainPath!=null && trainPath!=""){  //Save basic train results
-            res.setClassifierName("TunedSVM"+kernel);
+            res.setEstimatorName("TunedSVM"+kernel);
             res.setDatasetName(train.relationName());
             res.setFoldID(seed);
             res.setSplit("train");
